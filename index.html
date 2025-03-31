@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Upgrade Certificate Finder</title>
+    
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    
+    <style>
+      /* --- CSS that cannot be purely inline --- */
+
+      /* Lucide Icons Font */
+      @font-face {
+        font-family: 'LucideIcons';
+        src: url(https://cdn.jsdelivr.net/npm/lucide-static@latest/font/lucide.ttf) format('truetype');
+      }
+      .lucide {
+        font-family: 'LucideIcons';
+        font-size: 1.25rem; /* Default icon size */
+        line-height: 1;    /* Ensure icon aligns properly */
+        display: inline-block; /* Prevent extra space around icon */
+        vertical-align: middle; /* Align icon vertically */
+      }
+
+      /* Progress bar animation */
+      @keyframes progress-animation {
+          from { width: 0%; }
+          to { width: 100%; }
+      }
+      .progress-bar-inner {
+          animation: progress-animation 4s linear forwards;
+          background-color: #4CAF50; /* Green */
+          height: 100%;
+          border-radius: 9999px; /* full */
+      }
+      
+      /* Basic aspect ratio styles */
+      .aspect-w-16 { position: relative; padding-bottom: 56.25%; } /* 16:9 */
+      .aspect-h-9 > * { position: absolute; height: 100%; width: 100%; top: 0; right: 0; bottom: 0; left: 0; }
+
+      /* Hover/Focus States */
+      .search-btn:hover { background-color: #b91c1c; /* Darker Red */ box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); } /* shadow-lg */
+      .results-btn:hover { background-color: #b91c1c; /* Darker Red */ box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); } /* shadow-lg */
+      select:focus, input:focus {
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+          --tw-ring-color: #E31818; /* focus:ring-delta-red */
+          box-shadow: 0 0 0 2px var(--tw-ring-color);
+          border-color: #E31818; /* focus:border-delta-red */
+       }
+
+      /* Responsive Styles */
+       @media (min-width: 768px) { /* md breakpoint */
+          .main-content-box { padding: 2.5rem; } /* md:p-10 */
+          .main-title { font-size: 1.875rem; line-height: 2.25rem; } /* md:text-3xl */
+          .origin-dest-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+          .date-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+       }
+       @media (max-width: 767px) { /* Styles for smaller screens if needed */
+            .origin-dest-grid > div:not(:last-child) { margin-bottom: 1rem; }
+            .date-grid > div:not(:last-child) { margin-bottom: 1rem; }
+       }
+
+
+      /* Basic Body Styles */
+       body {
+          font-family: 'Inter', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+       }
+
+       /* Basic input/select styling */
+       select, input[type="date"], input[type="checkbox"], input[type="radio"] {
+           border: 1px solid #d1d5db; /* border-gray-300 */
+           border-radius: 0.375rem; /* rounded-md */
+           transition: border-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+       }
+       select, input[type="date"] {
+           width: 100%;
+           padding: 0.75rem; /* p-3 */
+           box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+           appearance: none; /* Remove default appearance */
+           -webkit-appearance: none;
+           -moz-appearance: none;
+           background-color: white;
+       }
+       select {
+           background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+           background-position: right 0.5rem center;
+           background-repeat: no-repeat;
+           background-size: 1.5em 1.5em;
+           padding-right: 2.5rem; /* Make space for arrow */
+       }
+        input[type="checkbox"], input[type="radio"] {
+           height: 1rem; width: 1rem; /* h-4 w-4 */
+           color: #E31818; /* text-delta-red */
+           vertical-align: middle;
+           flex-shrink: 0; /* Prevent shrinking in flex layouts */
+       }
+       input[type="checkbox"] { border-radius: 0.25rem; /* rounded */ }
+       input[type="radio"] { border-radius: 9999px; /* rounded-full */ }
+
+       input[type="checkbox"]:checked {
+           background-color: currentColor;
+           background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+           background-size: 100% 100%;
+           background-position: center;
+           background-repeat: no-repeat;
+           border-color: transparent;
+       }
+        input[type="radio"]:checked {
+           background-color: white; /* Keep bg white */
+           border-width: 4px; /* Create inner circle effect */
+           border-color: currentColor;
+       }
+
+       label { cursor: pointer; }
+
+       /* Fix for date input appearance if needed */
+       input[type="date"] { appearance: none; -webkit-appearance: none; }
+
+       /* Animation for spinner */
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+       .animate-spin { animation: spin 1s linear infinite; }
+
+
+    </style>
+    
+</head>
+    
+<body 
+    style="
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; /* Re-center content vertically */
+        min-height: 100vh; 
+        padding: 1rem; 
+        background-image: url('tahiti.jpg'); /* Placeholder Tahiti Beach Image */
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-attachment: fixed; 
+    "
+>
+
+    
+    <div 
+       class="main-content-box" 
+       style="
+          background-color: white; 
+          padding: 1.5rem; /* p-6 base */
+          border-radius: 0.5rem; /* rounded-lg */
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* shadow-xl */
+          width: 100%; 
+          max-width: 42rem; /* max-w-2xl */
+          margin-top: 2rem; 
+          margin-bottom: 2rem; 
+       ">
+
+        
+        <div id="page-search">
+            <h1 
+               class="main-title"
+               style="
+                  font-size: 1.5rem; line-height: 2rem; /* text-2xl base */
+                  font-weight: 700; /* font-bold */
+                  color: #003366; /* text-delta-blue */
+                  margin-bottom: 1.5rem; /* mb-6 */
+                  text-align: center;
+               ">
+                
+                <span class="lucide" style="margin-right: 0.5rem;"></span>
+                Global Upgrade Certificate Finder
+            </h1>
+
+            
+            <form id="search-form" style="display: flex; flex-direction: column; gap: 1.25rem;"> 
+
+                
+                <div class="origin-dest-grid" style="display: block;"> 
+                    <div> 
+                        <label for="origin" style="display: block; font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Origin:</label>
+                        <select id="origin" name="origin" required>
+                            <option value="">-- Select Origin --</option>
+                            <option value="ABQ">Albuquerque (ABQ)</option>
+                            <option value="AMS">Amsterdam (AMS)</option>
+                            <option value="ANC">Anchorage (ANC)</option>
+                            <option value="ATL">Atlanta (ATL)</option>
+                            <option value="AUS">Austin (AUS)</option>
+                            <option value="BWI">Baltimore (BWI)</option>
+                            <option value="BHM">Birmingham (BHM)</option>
+                            <option value="BOI">Boise (BOI)</option>
+                            <option value="BOS">Boston (BOS)</option>
+                            <option value="BUF">Buffalo (BUF)</option>
+                            <option value="CHS">Charleston (CHS)</option>
+                            <option value="CLT">Charlotte (CLT)</option>
+                            <option value="MDW">Chicago Midway (MDW)</option>
+                            <option value="ORD">Chicago O'Hare (ORD)</option>
+                            <option value="CVG">Cincinnati (CVG)</option>
+                            <option value="CLE">Cleveland (CLE)</option>
+                            <option value="CMH">Columbus (CMH)</option>
+                            <option value="DAL">Dallas Love Field (DAL)</option>
+                            <option value="DFW">Dallas/Ft. Worth (DFW)</option>
+                            <option value="DEN">Denver (DEN)</option>
+                            <option value="DSM">Des Moines (DSM)</option>
+                            <option value="DTW">Detroit (DTW)</option>
+                            <option value="FLL">Fort Lauderdale (FLL)</option>
+                            <option value="RSW">Fort Myers (RSW)</option>
+                            <option value="GRR">Grand Rapids (GRR)</option>
+                            <option value="GSO">Greensboro (GSO)</option>
+                            <option value="BDL">Hartford (BDL)</option>
+                            <option value="HNL">Honolulu (HNL)</option>
+                            <option value="IAH">Houston Intercontinental (IAH)</option>
+                            <option value="IND">Indianapolis (IND)</option>
+                            <option value="JAX">Jacksonville (JAX)</option>
+                            <option value="MCI">Kansas City (MCI)</option>
+                            <option value="LAS">Las Vegas (LAS)</option>
+                            <option value="LHR">London (LHR)</option>
+                            <option value="LAX">Los Angeles (LAX)</option>
+                            <option value="MSN">Madison (MSN)</option>
+                            <option value="MEM">Memphis (MEM)</option>
+                            <option value="MIA">Miami (MIA)</option>
+                            <option value="MKE">Milwaukee (MKE)</option>
+                            <option value="MSP">Minneapolis (MSP)</option>
+                            <option value="BNA">Nashville (BNA)</option>
+                            <option value="MSY">New Orleans (MSY)</option>
+                            <option value="JFK">New York (JFK)</option>
+                            <option value="LGA">New York (LGA)</option>
+                            <option value="EWR">Newark (EWR)</option>
+                            <option value="ORF">Norfolk (ORF)</option>
+                            <option value="OAK">Oakland (OAK)</option>
+                            <option value="OKC">Oklahoma City (OKC)</option>
+                            <option value="OMA">Omaha (OMA)</option>
+                            <option value="ONT">Ontario (ONT)</option>
+                            <option value="SNA">Orange County (SNA)</option>
+                            <option value="MCO">Orlando (MCO)</option>
+                            <option value="CDG">Paris (CDG)</option>
+                            <option value="PHL">Philadelphia (PHL)</option>
+                            <option value="PHX">Phoenix (PHX)</option>
+                            <option value="PIT">Pittsburgh (PIT)</option>
+                            <option value="PDX">Portland (PDX)</option>
+                            <option value="PVD">Providence (PVD)</option>
+                            <option value="RDU">Raleigh-Durham (RDU)</option>
+                            <option value="RIC">Richmond (RIC)</option>
+                            <option value="ROC">Rochester (ROC)</option>
+                            <option value="SMF">Sacramento (SMF)</option>
+                            <option value="SLC">Salt Lake City (SLC)</option>
+                            <option value="SAT">San Antonio (SAT)</option>
+                            <option value="SAN">San Diego (SAN)</option>
+                            <option value="SFO">San Francisco (SFO)</option>
+                            <option value="SJC">San Jose (SJC)</option>
+                            <option value="SAV">Savannah (SAV)</option>
+                            <option value="SEA">Seattle (SEA)</option>
+                            <option value="ICN">Seoul (ICN)</option>
+                            <option value="GEG">Spokane (GEG)</option>
+                            <option value="STL">St. Louis (STL)</option>
+                            <option value="SYR">Syracuse (SYR)</option>
+                            <option value="TPA">Tampa (TPA)</option>
+                            <option value="HND">Tokyo (HND)</option>
+                            <option value="TUL">Tulsa (TUL)</option>
+                            <option value="IAD">Washington Dulles (IAD)</option>
+                            <option value="DCA">Washington Reagan (DCA)</option>
+                            <option value="PBI">West Palm Beach (PBI)</option>
+                        </select>
+                    </div>
+                    <div> 
+                        <label for="destination" style="display: block; font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Destination:</label>
+                        <select id="destination" name="destination" required>
+                            <option value="">-- Select Destination --</option>
+                            <option value="ACC">Accra (ACC)</option>
+                            <option value="AMS">Amsterdam (AMS)</option>
+                            <option value="ATH">Athens (ATH)</option>
+                            <option value="ATL">Atlanta (ATL)</option>
+                            <option value="AKL">Auckland (AKL)</option>
+                            <option value="BKK">Bangkok (BKK)</option>
+                            <option value="BCN">Barcelona (BCN)</option>
+                            <option value="PEK">Beijing (PEK)</option>
+                            <option value="BOG">Bogota (BOG)</option>
+                            <option value="BOS">Boston (BOS)</option>
+                            <option value="BNE">Brisbane (BNE)</option>
+                            <option value="BRU">Brussels (BRU)</option>
+                            <option value="BUD">Budapest (BUD)</option>
+                            <option value="EZE">Buenos Aires (EZE)</option>
+                            <option value="YYC">Calgary (YYC)</option>
+                            <option value="CUN">Cancun (CUN)</option>
+                            <option value="CPT">Cape Town (CPT)</option>
+                            <option value="ORD">Chicago O'Hare (ORD)</option>
+                            <option value="CPH">Copenhagen (CPH)</option>
+                            <option value="DKR">Dakar (DKR)</option>
+                            <option value="DFW">Dallas/Ft. Worth (DFW)</option>
+                            <option value="DUB">Dublin (DUB)</option>
+                            <option value="FRA">Frankfurt (FRA)</option>
+                            <option value="HKG">Hong Kong (HKG)</option>
+                            <option value="HNL">Honolulu (HNL)</option>
+                            <option value="JNB">Johannesburg (JNB)</option>
+                            <option value="OGG">Kahului (OGG)</option>
+                            <option value="KOA">Kona (KOA)</option>
+                            <option value="LOS">Lagos (LOS)</option>
+                            <option value="LIH">Lihue (LIH)</option>
+                            <option value="LIM">Lima (LIM)</option>
+                            <option value="LIS">Lisbon (LIS)</option>
+                            <option value="LHR">London (LHR)</option>
+                            <option value="LAX">Los Angeles (LAX)</option>
+                            <option value="MAD">Madrid (MAD)</option>
+                            <option value="MNL">Manila (MNL)</option>
+                            <option value="MEL">Melbourne (MEL)</option>
+                            <option value="MEX">Mexico City (MEX)</option>
+                            <option value="MIA">Miami (MIA)</option>
+                            <option value="MXP">Milan (MXP)</option>
+                            <option value="MSP">Minneapolis (MSP)</option>
+                            <option value="YUL">Montreal (YUL)</option>
+                            <option value="MUC">Munich (MUC)</option>
+                            <option value="NAS">Nassau (NAS)</option>
+                            <option value="JFK">New York (JFK)</option>
+                            <option value="MCO">Orlando (MCO)</option>
+                            <option value="OSL">Oslo (OSL)</option>
+                            <option value="PTY">Panama City (PTY)</option>
+                            <option value="PPT">Papeete (PPT)</option>
+                            <option value="CDG">Paris (CDG)</option>
+                            <option value="PER">Perth (PER)</option>
+                            <option value="PRG">Prague (PRG)</option>
+                            <option value="PUJ">Punta Cana (PUJ)</option>
+                            <option value="GIG">Rio de Janeiro (GIG)</option>
+                            <option value="FCO">Rome (FCO)</option>
+                            <option value="SLC">Salt Lake City (SLC)</option>
+                            <option value="SJO">San Jose (SJO)</option>
+                            <option value="SCL">Santiago (SCL)</option>
+                            <option value="SDQ">Santo Domingo (SDQ)</option>
+                            <option value="GRU">Sao Paulo (GRU)</option>
+                            <option value="SEA">Seattle (SEA)</option>
+                            <option value="ICN">Seoul (ICN)</option>
+                            <option value="PVG">Shanghai (PVG)</option>
+                            <option value="SIN">Singapore (SIN)</option>
+                            <option value="ARN">Stockholm (ARN)</option>
+                            <option value="SYD">Sydney (SYD)</option>
+                            <option value="TPE">Taipei (TPE)</option>
+                            <option value="HND">Tokyo (HND)</option>
+                            <option value="YYZ">Toronto (YYZ)</option>
+                            <option value="YVR">Vancouver (YVR)</option>
+                            <option value="VCE">Venice (VCE)</option>
+                            <option value="VIE">Vienna (VIE)</option>
+                            <option value="ZRH">Zurich (ZRH)</option>
+                        </select>
+                    </div>
+                </div>
+
+                
+                <div class="date-grid" style="display: block;"> 
+                    <div> 
+                        <label for="start-date" style="display: block; font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">Start Date:</label>
+                        <input type="date" id="start-date" name="start-date" required>
+                    </div>
+                    <div> 
+                        <label for="end-date" style="display: block; font-size: 0.875rem; line-height: 1.25rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem;">End Date:</label>
+                        <input type="date" id="end-date" name="end-date" required>
+                    </div>
+                </div>
+
+                
+                <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; padding-top: 0.5rem;">
+                     <div style="display: flex; align-items: center;">
+                        <input type="radio" id="exact-dates" name="flexibility" value="exact" required checked>
+                        <label for="exact-dates" style="margin-left: 0.5rem; display: block; font-size: 0.875rem; line-height: 1.25rem; color: #1f2937;">Exact dates</label>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <input type="radio" id="flexible-dates" name="flexibility" value="flexible" required>
+                        <label for="flexible-dates" style="margin-left: 0.5rem; display: block; font-size: 0.875rem; line-height: 1.25rem; color: #1f2937;">My dates are flexible</label>
+                    </div>
+                </div>
+
+                
+                <div class="search-btn-wrapper" style="width: 100%;">
+                    <button 
+                        type="submit" 
+                        class="search-btn"
+                        style="
+                            width: 100%; 
+                            background-color: #E31818; 
+                            color: white; 
+                            font-weight: 700; 
+                            padding-top: 0.75rem; padding-bottom: 0.75rem; 
+                            padding-left: 1rem; padding-right: 1rem; 
+                            border-radius: 0.375rem; /* rounded-md */
+                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+                            transition: background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+                            border: none; cursor: pointer;
+                        ">
+                        SEARCH
+                    </button>
+                </div>
+            </form>
+
+            
+            <p style="font-size: 0.75rem; line-height: 1rem; color: #6b7280; margin-top: 1.5rem; text-align: center;">
+                
+                By clicking SEARCH or otherwise utilizing this tool, you acknowledge and agree to the following terms: Information presented, including flight schedules and availability, is not guaranteed to be accurate, complete, or current and does not reflect real-time data from airlines or their partners. Availability is subject to change without notice. Use of this tool is at your sole risk. The providers of this tool disclaim all warranties, express or implied, regarding its functionality or the information presented, and assume no liability for any decisions made based on its use, or for any discrepancies between the results shown and actual upgrade availability. Terms are subject to change without notice.
+            </p>
+        </div>
+
+        
+        <div id="page-searching" style="display: none; text-align: center;">
+
+            
+            <p id="status-message" style="font-size: 1.125rem; line-height: 1.75rem; color: #374151; margin-bottom: 1rem;">
+                
+                <span class="lucide animate-spin" style="margin-right: 0.5rem;"></span> 
+                Hang tight, we are searching for Global Upgrade Space...
+            </p>
+
+            
+            <div id="progress-container" style="width: 100%; background-color: #e5e7eb; border-radius: 9999px; height: 1.5rem; overflow: hidden; margin-bottom: 1.5rem; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);">
+                <div id="progress-bar" class="progress-bar-inner" style="width: 0%;"></div> 
+            </div>
+
+            
+            <div id="success-section" style="display: none;">
+                
+                <h2 style="font-size: 2.25rem; line-height: 2.5rem; font-weight: 700; color: #003366; margin-bottom: 0.5rem;">SUCCESS</h2> 
+                
+                <p style="text-align: center; font-size: 0.875rem; line-height: 1.25rem; color: #374151; margin-top: 0.5rem; margin-bottom: 1rem;">
+                    We have confirmed Global Upgrade space on flights for your preferred travel dates
+                </p>
+                <button 
+                    id="results-button" 
+                    class="results-btn"
+                    style="
+                        background-color: #E31818; 
+                        color: white; 
+                        font-weight: 700; 
+                        padding: 0.75rem 1.5rem; 
+                        border-radius: 0.375rem; 
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+                        transition: background-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
+                        border: none; cursor: pointer;
+                    ">
+                    Click here for your results
+                </button>
+            </div>
+        </div>
+
+        
+        <div id="page-results" style="display: none; text-align: center;">
+
+            
+            <div class="aspect-w-16 aspect-h-9" style="margin-bottom: 1.5rem; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-width: 36rem; margin-left: auto; margin-right: auto; background-color: black;">
+                 
+                 
+                 <video 
+                    id="rick-video-local"
+                    
+                    loop 
+                    controls 
+                    playsinline
+                    
+                    src="successvid.mp4" 
+                    
+                    style="width: 100%; height: 100%; object-fit: cover; border: 0;"
+                 >
+                    Your browser does not support the video tag. 
+                    
+                 </video>
+                 
+            </div>
+
+            
+            <h1 style="font-size: 2.25rem; line-height: 2.5rem; font-weight: 700; color: #003366; margin-bottom: 1rem;">April Fools!</h1>
+
+            
+            <div class="lyrics" style="color: #374151; font-style: italic; margin-bottom: 1.5rem; line-height: 1.5; font-size: 0.875rem;"> 
+                <p>Ed’s always gonna give you up</p>
+                <p>Ed’s gonna let you down</p>
+                <p>Ed’s gonna run around and desert you</p>
+                <p>Ed’s gonna make you cry</p>
+                <p>Ed’s gonna say goodbye</p>
+                <p>Ed’s gonna tell a lie and hurt you</p>
+            </div>
+
+            
+            <p class="final-message" style="color: #003366; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.875rem;">Ed doesn’t love you that much to make this easy!</p>
+            <p class="final-message" style="color: #003366; font-weight: 600; font-size: 0.875rem;">Please go back to the original post and let everyone know how helpful this site was for you</p>
+        </div>
+
+    </div> 
+    
+    <script>
+        // Use jQuery for DOM manipulation and event handling
+        $(document).ready(function() {
+            // Get references to the different page sections using jQuery selectors
+            const pageSearch = $('#page-search');
+            const pageSearching = $('#page-searching');
+            const pageResults = $('#page-results');
+
+            // Get references to interactive elements
+            const searchForm = $('#search-form');
+            const progressContainer = $('#progress-container');
+            const progressBar = $('#progress-bar');
+            const statusMessage = $('#status-message');
+            const successSection = $('#success-section');
+            const resultsButton = $('#results-button');
+            const videoElement = $('#rick-video-local'); 
+
+            // --- Event Listener for Search Form Submission ---
+            searchForm.on('submit', function(event) {
+                event.preventDefault(); // Prevent the default form submission behavior
+
+                // Hide the search page and show the searching page
+                pageSearch.hide();
+                pageSearching.show();
+
+                // Reset progress bar appearance and start animation
+                progressContainer.show(); 
+                progressBar.removeClass('progress-bar-inner'); // Remove animation class briefly
+                void progressBar[0].offsetWidth; // Force browser reflow to restart animation
+                progressBar.addClass('progress-bar-inner'); // Re-add animation class
+
+                // Ensure status message is visible and success section is hidden
+                statusMessage.show();
+                successSection.hide();
+
+                // Simulate the search process with a timeout
+                setTimeout(() => {
+                    // After the timeout:
+                    // Hide the progress bar container and status message
+                    progressContainer.hide();
+                    statusMessage.hide();
+
+                    // Show the success message and the results button
+                    successSection.show();
+                }, 4500); // Wait 4.5 seconds (matches CSS animation duration + buffer)
+            });
+
+            // --- Event Listener for Results Button Click ---
+            resultsButton.on('click', function() {
+                console.log('Results button clicked'); // Debugging: Check if handler fires
+                console.log('Hiding:', pageSearching); // Debugging: Check element selection
+                pageSearching.hide();
+                
+                console.log('Showing:', pageResults); // Debugging: Check element selection
+                pageResults.show();
+
+                // --- Video Playback Logic ---
+                // Attempt to play the video when the results page is shown
+                const video = videoElement[0]; // Get the raw DOM element
+                // Check if src is actually set and not just the base URL (which can happen if empty)
+                // Also check if the video element exists
+                if (video && video.src && video.src !== window.location.href ) { 
+                   console.log('Attempting to play video:', video.src); // Debugging
+                   // Attempt play. The promise should be handled.
+                   var playPromise = video.play(); 
+                   if (playPromise !== undefined) {
+                       playPromise.then(_ => {
+                           // Playback started!
+                           console.log("Video playback started via JS.");
+                       }).catch(error => {
+                           // Playback was prevented.
+                           console.warn("Playback prevented: ", error); 
+                           // Controls are visible, so user can manually play.
+                       });
+                   }
+                } else {
+                    console.warn("Video source is not set or invalid. Please update the 'src' attribute in the HTML.", video ? video.src : 'Video element not found'); // Debugging
+                }
+                
+            });
+        });
+    </script>
+
+</body>
+</html>
